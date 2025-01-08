@@ -1,4 +1,6 @@
 #define SDL_MAIN_HANDLED
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <GL/glew.h>
 #include <SDL.h>
 #include <SDL_opengl.h>
@@ -44,6 +46,7 @@ JK      control thrust
 #define USE_PID            1
 #define PS1_RESOLUTION     1
 #define DEBUG_INFO         0
+
 
 /* select flightmodel */
 #define FAST_JET    0

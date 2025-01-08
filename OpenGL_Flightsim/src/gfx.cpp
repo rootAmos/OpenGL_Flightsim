@@ -1,3 +1,5 @@
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include "gfx.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -5,6 +7,10 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../lib/stb_image.h"
+
+
+
+
 
 std::string load_text_file(const std::string& path)
 {

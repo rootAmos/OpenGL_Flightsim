@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -105,13 +105,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\include;C:\Users\jakob\Documents\libraries\SDL2\include;C:\Users\jakob\Documents\libraries\glm-0.9.9.8\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\alexa\Documents\Chasing Amber\simlibs\glew-2.1.0-win32\glew-2.1.0\include;C:\Users\alexa\Documents\Chasing Amber\simlibs\SDL2-devel-2.30.11-VC\SDL2-2.30.11\include;C:\Users\alexa\Documents\Chasing Amber\simlibs\glm\glm;C:\Users\alexa\Documents\Chasing Amber\simlibs\SDL2-2.30.11\SDL2-2.30.11\include;C:\Users\alexa\Documents\Chasing Amber\simlibs\glm;C:\Users\alexa\Documents\Chasing Amber\simlibs\SDL2-2.30.11-win32-x64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\lib\Release\x64;C:\Users\jakob\Documents\libraries\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\alexa\Documents\Chasing Amber\simlibs\glew-2.1.0-win32\glew-2.1.0\lib\Release\x64;C:\Users\alexa\Documents\Chasing Amber\simlibs\SDL2-devel-2.30.11-VC\SDL2-2.30.11\lib\x64;C:\Users\alexa\Documents\Chasing Amber\simlibs\SDL2-2.30.11-win32-x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;glew32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
