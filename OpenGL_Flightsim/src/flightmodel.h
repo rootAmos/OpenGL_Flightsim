@@ -94,6 +94,7 @@ struct Airfoil {
 // base engine
 struct Engine {
   float throttle = 0.25f;
+  float vtol_throttle = 0.0f;
   glm::vec3 relative_position = glm::vec3(0);  // position relative to cg
   virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
 };
@@ -106,6 +107,17 @@ struct SimpleEngine : public Engine {
   void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
   {
     rigid_body->add_force_at_point({throttle * thrust, 0.0f, 0.0f}, relative_position);
+  }
+};
+
+
+struct VTOLEngine : public Engine {
+  const float horthrust, verthrust;
+  VTOLEngine(float horthrust, float verthrust) : horthrust(horthrust), verthrust(verthrust) {}
+
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
+  {
+    rigid_body->add_force_at_point({throttle*horthrust, vtol_throttle* verthrust, 0.0f }, relative_position);
   }
 };
 
@@ -154,6 +166,7 @@ struct Wing {
   const float efficiency_factor = 1.0f;
 
   float control_input = 0.0f;
+  bool vtol_mode{false};
 
   // relative position of leading edge to cg
   Wing(const Airfoil* airfoil, const glm::vec3& relative_position, float area, float span, const glm::vec3& normal,
@@ -186,10 +199,25 @@ struct Wing {
   void set_control_input(float input) { control_input = glm::clamp(input, -1.0f, 1.0f); }
 
   // compute and apply aerodynamic forces
-  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt)
+  void apply_forces(phi::RigidBody* rigid_body,  phi::Seconds dt)
   {
+    // Get the current airspeed
+    /*
+    float airspeed = glm::length(wind);
+    
+    // If airspeed is too low and VTOL thrust is active, 
+    // maintain a minimum effective airspeed to prevent stall
+    if (airspeed < 20.0f && vtol_mode) {  // 20 m/s is example threshold
+        // Use minimum airspeed for lift calculation
+        airspeed = 20.0f;
+    }*/
+    
     glm::vec3 local_velocity = rigid_body->get_point_velocity(center_of_pressure);
     float speed = glm::length(local_velocity);
+
+
+    // VTOL Stall prevention
+    
 
     if (speed <= phi::EPSILON) return;
 
@@ -240,9 +268,11 @@ struct Wing {
 struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
   float throttle = 0.25f;
+  float vtol_throttle{0.0f};
   std::vector<Engine*> engines;
   std::vector<Wing> wings;
   bool is_landed = false;
+  bool vtol_mode{false};
 
 #if LOG_FLIGHT
   float log_timer = 0.0f;
@@ -305,16 +335,18 @@ struct Airplane : public phi::RigidBody {
 #endif
 
     for (auto& wing : wings) {
+      //wing.vtol_mode = vtol_mode;
       wing.apply_forces(this, dt);
     }
 
     for (auto engine : engines) {
       engine->throttle = throttle;
+      engine->vtol_throttle = vtol_throttle;
       engine->apply_forces(this, dt);
     }
 
     phi::RigidBody::update(dt);
-  }
+  } 
 
   // aircraft altitude
   float get_altitude() const { return position.y; }

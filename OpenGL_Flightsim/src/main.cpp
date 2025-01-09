@@ -51,7 +51,8 @@ JK      control thrust
 /* select flightmodel */
 #define FAST_JET    0
 #define CESSNA      1
-#define FLIGHTMODEL FAST_JET
+#define VTOL_JET    2
+#define FLIGHTMODEL VTOL_JET
 
 #if PS1_RESOLUTION
 constexpr glm::ivec2 RESOLUTION{640, 480};
@@ -62,6 +63,8 @@ constexpr glm::ivec2 RESOLUTION{1024, 728};
 struct Joystick {
   int num_axis{0}, num_hats{0}, num_buttons{0};
   float aileron{0.0f}, elevator{0.0f}, rudder{0.0f}, throttle{0.0f}, trim{0.0f};
+  float vtol_throttle{0.0f};
+  bool vtol_mode{false};
 
   // scale from int16 to -1.0, 1.0
   inline static float scale(int16_t value)
@@ -181,7 +184,9 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 initial_position = glm::vec3(0.0f, 3000.0f, 0.0f);
+  //glm::vec3 initial_position = glm::vec3(0.0f, 3000.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 500.0f, 0.0f);
+
 
 #if (FLIGHTMODEL == CESSNA)
   constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
@@ -309,6 +314,60 @@ int main(void)
   };
 
   Engine* engine = new SimpleEngine(thrust);
+#elif (FLIGHTMODEL == VTOL_JET)
+
+  constexpr float speed = phi::units::meter_per_second(15.0f /* km/h */);
+  //constexpr float speed = 0.0f;
+
+  // VTOL Parameters
+  // constexpr float transition_speed = phi::units::meter_per_second(20.0f);  // Speed for transitioning to forward flight
+  // const float hover_stabilization_gain = 0.5f;  // Gain for stabilization in hover
+
+  const float horthrust = 7500.0f;
+  const float verthrust = 20000.0f; // Max ver thrust value
+
+  // Cessna mass and wing properties
+  const float mass = 1000.0f;
+  const float total_wing_area = 16.17f;
+  const float total_wing_span = 11.00f;
+  const float main_wing_span = total_wing_span / 2;
+  const float main_wing_area = total_wing_area / 2;
+  const float main_wing_chord = main_wing_area / main_wing_span;
+
+  // Cessna tail properties
+  const float elevator_area = 1.35f;
+  const float h_tail_area = 2.0f + elevator_area;
+  const float h_tail_span = 2.0f;
+  const float h_tail_chord = h_tail_area / h_tail_span;
+  const float v_tail_area = 2.04f;
+  const float v_tail_span = 2.04f;
+  const float v_tail_chord = v_tail_area / v_tail_span;
+
+  const float wing_offset = -0.2f;
+  const float tail_offset = -4.6f;
+
+  std::vector<phi::inertia::Element> masses = {
+      phi::inertia::cube({wing_offset, 0.5f, -2.7f}, {main_wing_chord, 0.10f, main_wing_span}, mass * 0.25f),  // left wing
+      phi::inertia::cube({wing_offset, 0.5f, +2.7f}, {main_wing_chord, 0.10f, main_wing_span}, mass * 0.25f),  // right wing
+      phi::inertia::cube({tail_offset, -0.1f, 0.0f}, {h_tail_chord, 0.10f, h_tail_span}, mass * 0.1f),   // elevator
+      phi::inertia::cube({tail_offset, 0.0f, 0.0f}, {v_tail_chord, v_tail_span, 0.10f}, mass * 0.1f),    // rudder
+      phi::inertia::cube({0.0f, 0.0f, 0.0f}, {8.0f, 2.0f, 1.0f}, mass * 0.5f),              // fuselage
+  };
+
+  const auto inertia = phi::inertia::tensor(masses, true);
+
+  // Cessna airfoils
+  const Airfoil NACA_0012(NACA_0012_data);
+  const Airfoil NACA_2412(NACA_2412_data);
+
+  std::vector<Wing> wings = {
+      Wing({wing_offset, 0.0f, -2.7f}, main_wing_chord, main_wing_span, &NACA_2412, phi::UP, 0.20f),    // left wing
+      Wing({wing_offset, 0.0f, +2.7f}, main_wing_chord, main_wing_span, &NACA_2412, phi::UP, 0.20f),    // right wing
+      Wing({tail_offset, -0.1f, 0.0f}, h_tail_chord, h_tail_span, &NACA_0012, phi::UP, 1.0f),     // elevator
+      Wing({tail_offset, 0.0f, 0.0f}, v_tail_chord, v_tail_span, &NACA_0012, phi::RIGHT, 0.15f),  // rudder
+  };
+
+  Engine* engine = new VTOLEngine(horthrust, verthrust);
 #else
 #error FLIGHTMODEL not defined
 #endif
@@ -395,6 +454,8 @@ int main(void)
 
   float alt{}, spd{}, ias{}, aoa{}, gee{};
   int thr{};
+
+
 
   while (!quit) {
     // delta time in seconds
@@ -506,7 +567,7 @@ int main(void)
     }
 
     ImGui::SetNextWindowPos(ImVec2(10, 10));
-    ImGui::SetNextWindowSize(ImVec2(145, 160));
+    ImGui::SetNextWindowSize(ImVec2(145, 200));
     ImGui::SetNextWindowBgAlpha(0.35f);
     ImGui::Begin("Flightsim", nullptr, window_flags);
     ImGui::Text("ALT:   %.1f m", alt);
@@ -517,6 +578,12 @@ int main(void)
     ImGui::Text("AoA:   %.2f", aoa);
     ImGui::Text("Trim:  %.2f", player.airplane.joystick.w);
     ImGui::Text("FPS:   %.1f", fps);
+    // Add your new VTOL parameters:
+    ImGui::Text("Mode:  %s [%s]", 
+    joystick.vtol_mode ? "VTOL" : "NORMAL",
+    joystick.vtol_mode ? "ACTIVE" : "OFF");
+    ImGui::Text("VTOL:  %.1f %%", joystick.vtol_throttle * 100.0f);
+
     ImGui::End();
 
 #if DEBUG_INFO
@@ -550,6 +617,8 @@ int main(void)
     }
 #endif
     player.airplane.throttle = joystick.throttle;
+    player.airplane.vtol_throttle = joystick.vtol_throttle;
+    player.airplane.vtol_mode = joystick.vtol_mode;
 
 #if NPC_AIRCRAFT
     target_marker.visible = glm::length(camera.get_world_position() - npc.airplane.position) > 500.0f;
@@ -598,6 +667,8 @@ inline float center(float value, float factor, float dt)
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
 {
+  static bool v_key_was_pressed = false;
+
   const glm::vec3 factor = {3.0f, 0.5f, 1.0f};  // roll, yaw, pitch
   const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
@@ -638,5 +709,23 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
     joystick.trim = glm::clamp(joystick.trim - trim_speed, -1.0f, 1.0f);
   } else if (key_states[SDL_SCANCODE_M]) {
     joystick.trim = glm::clamp(joystick.trim + trim_speed, -1.0f, 1.0f);
+  }
+
+  // Vertical thrust control
+    if (key_states[SDL_SCANCODE_R]) {
+    joystick.vtol_throttle = glm::clamp(joystick.vtol_throttle + throttle_speed, 0.0f, 1.0f);
+  } else if (key_states[SDL_SCANCODE_F]) {
+    joystick.vtol_throttle = glm::clamp(joystick.vtol_throttle - throttle_speed, 0.0f, 1.0f);
+  }
+
+  // Toggle VTOL mode only on key press, not every frame
+  if (key_states[SDL_SCANCODE_V]) {
+    if (!v_key_was_pressed) {  // Only toggle if key wasn't pressed last frame
+        joystick.vtol_mode = !joystick.vtol_mode;
+        std::cout << "VTOL Mode: " << (joystick.vtol_mode ? "ON" : "OFF") << std::endl;
+        v_key_was_pressed = true;
+    }
+  } else {
+    v_key_was_pressed = false;  // Reset when key is released
   }
 }
