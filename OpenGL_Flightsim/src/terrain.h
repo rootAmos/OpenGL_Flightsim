@@ -3,9 +3,11 @@
 #include "gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
+//const float MAX_TILE_SIZE = 50708.0f * 4;
+
 const float MAX_TILE_SIZE = 50708.0f * 4;
 
-#define DATA_SRC 0
+#define DATA_SRC 1
 
 #if (DATA_SRC == 1)
 const std::string PATH = "assets/textures/terrain/data/9/268/178/";

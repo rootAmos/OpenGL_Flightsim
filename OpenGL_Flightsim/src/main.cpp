@@ -185,7 +185,7 @@ int main(void)
   std::vector<GameObject*> objects;
 
   //glm::vec3 initial_position = glm::vec3(0.0f, 3000.0f, 0.0f);
-  glm::vec3 initial_position = glm::vec3(0.0f, 500.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 4000.0f, 0.0f);
 
 
 #if (FLIGHTMODEL == CESSNA)
